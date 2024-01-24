@@ -34,16 +34,22 @@ enum V4l2IoType
 	IOTYPE_MMAP
 };
 
+enum V4l2CaptureType
+{
+	CapType_Normal,
+	CapType_MPlane
+};
+
 // ---------------------------------
 // V4L2 Device parameters
 // ---------------------------------
 struct V4L2DeviceParameters 
 {
-	V4L2DeviceParameters(const char* devname, const std::list<unsigned int> & formatList, unsigned int width, unsigned int height, int fps, V4l2IoType ioType = IOTYPE_MMAP, int verbose = 0, int openFlags = O_RDWR | O_NONBLOCK) : 
-		m_devName(devname), m_formatList(formatList), m_width(width), m_height(height), m_fps(fps), m_iotype(ioType), m_verbose(verbose), m_openFlags(openFlags) {}
+	V4L2DeviceParameters(const char* devname, const std::list<unsigned int> & formatList, unsigned int width, unsigned int height, int fps, V4l2IoType ioType = IOTYPE_MMAP, V4l2CaptureType captype = CapType_Normal, int verbose = 0, int openFlags = O_RDWR | O_NONBLOCK) : 
+		m_devName(devname), m_formatList(formatList), m_width(width), m_height(height), m_fps(fps), m_iotype(ioType), m_captype(captype), m_verbose(verbose), m_openFlags(openFlags) {}
 
-	V4L2DeviceParameters(const char* devname, unsigned int format, unsigned int width, unsigned int height, int fps, V4l2IoType ioType = IOTYPE_MMAP, int verbose = 0, int openFlags = O_RDWR | O_NONBLOCK) : 
-		m_devName(devname), m_width(width), m_height(height), m_fps(fps), m_iotype(ioType), m_verbose(verbose), m_openFlags(openFlags) {
+	V4L2DeviceParameters(const char* devname, unsigned int format, unsigned int width, unsigned int height, int fps, V4l2IoType ioType = IOTYPE_MMAP, V4l2CaptureType captype = CapType_Normal, int verbose = 0, int openFlags = O_RDWR | O_NONBLOCK) : 
+		m_devName(devname), m_width(width), m_height(height), m_fps(fps), m_iotype(ioType), m_captype(captype), m_verbose(verbose), m_openFlags(openFlags) {
 			if (format) {
 				m_formatList.push_back(format);
 			}
@@ -55,6 +61,7 @@ struct V4L2DeviceParameters
 	unsigned int m_height;
 	int m_fps;			
 	V4l2IoType m_iotype;
+	V4l2CaptureType m_captype;
 	int m_verbose;
 	int m_openFlags;
 };
@@ -117,6 +124,7 @@ class V4l2Device
 		unsigned int m_format;
 		unsigned int m_width;
 		unsigned int m_height;	
+		unsigned int m_nmplane;
 
 		struct v4l2_buffer m_partialWriteBuf;
 		bool m_partialWriteInProgress;

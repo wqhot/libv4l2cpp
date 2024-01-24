@@ -43,7 +43,21 @@ class V4l2MmapDevice : public V4l2Device
 			void *                  start;
 			size_t                  length;
 		};
+
+		struct plane_start 
+		{
+			void * start;
+		};
+
+		struct buffer_mplane
+		{
+			struct plane_start* plane_start;
+			struct v4l2_plane* planes_buffer;
+		};
 		buffer m_buffer[V4L2MMAP_NBBUFFER];
+		buffer_mplane m_buffer_mplane[V4L2MMAP_NBBUFFER];
+		struct v4l2_plane  *m_planes_buffer;
+		struct plane_start *m_plane_start;
 };
 
 #endif

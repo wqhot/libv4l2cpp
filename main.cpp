@@ -36,6 +36,7 @@ int main(int argc, char* argv[])
 	int verbose = 0;
 	const char *in_devname = "/dev/video0";	
 	V4l2IoType ioTypeIn  = IOTYPE_MMAP;
+	V4l2CaptureType capTypeIn = CapType_MPlane;
 	int format = 0;
 	int width = 0;
 	int height = 0;
@@ -71,7 +72,7 @@ int main(int argc, char* argv[])
 	initLogger(verbose);
 
 	// init V4L2 capture interface
-	V4L2DeviceParameters param(in_devname, format, width, height, fps, ioTypeIn, verbose);
+	V4L2DeviceParameters param(in_devname, format, width, height, fps, ioTypeIn, capTypeIn, verbose);
 	V4l2Capture* videoCapture = V4l2Capture::create(param);
 	
 	if (videoCapture == NULL)

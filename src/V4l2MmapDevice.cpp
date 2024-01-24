@@ -81,11 +81,38 @@ bool V4l2MmapDevice::start()
 			buf.type        = m_deviceType;
 			buf.memory      = V4L2_MEMORY_MMAP;
 			buf.index       = n_buffers;
+			if (m_deviceType == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
+			{
+				m_planes_buffer = (v4l2_plane *)calloc(m_nmplane, sizeof(*m_planes_buffer));
+				m_plane_start = (plane_start *)calloc(m_nmplane, sizeof(*m_plane_start));
+				buf.m.planes = m_planes_buffer;
+				buf.length = m_nmplane;
+			}
 
 			if (-1 == ioctl(m_fd, VIDIOC_QUERYBUF, &buf))
 			{
 				perror("VIDIOC_QUERYBUF");
 				success = false;
+			}
+			else if (m_deviceType == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
+			{
+				m_buffer_mplane[n_buffers].planes_buffer = m_planes_buffer;
+				m_buffer_mplane[n_buffers].plane_start = m_plane_start;
+				for (int plane = 0; plane < m_nmplane; plane++)
+				{
+					LOG(INFO) << "Device " << m_params.m_devName << " buffer idx:" << n_buffers << " num_plane:" << buf.length << " length:" << m_planes_buffer->length << " offset:" << m_planes_buffer->m.mem_offset;
+					m_buffer_mplane[n_buffers].plane_start = (plane_start*)mmap (   NULL /* start anywhere */, 
+																		m_buffer_mplane[n_buffers].planes_buffer->length, 
+																		PROT_READ | PROT_WRITE /* required */, 
+																		MAP_SHARED /* recommended */, 
+																		m_fd, 
+																		m_buffer_mplane[n_buffers].planes_buffer->m.mem_offset);
+					if (MAP_FAILED == m_buffer_mplane[n_buffers].plane_start)
+					{
+						perror("mmap");
+						success = false;
+					}
+				}
 			}
 			else
 			{
@@ -117,6 +144,12 @@ bool V4l2MmapDevice::start()
 			buf.type        = m_deviceType;
 			buf.memory      = V4L2_MEMORY_MMAP;
 			buf.index       = i;
+
+			if (m_deviceType == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
+			{
+				buf.m.planes = m_buffer_mplane[n_buffers].planes_buffer;
+				buf.length = m_nmplane;
+			}
 
 			if (-1 == ioctl(m_fd, VIDIOC_QBUF, &buf))
 			{
@@ -180,9 +213,16 @@ size_t V4l2MmapDevice::readInternal(char* buffer, size_t bufferSize)
 	if (n_buffers > 0)
 	{
 		struct v4l2_buffer buf;	
+		struct v4l2_plane *tmp_plane;
+		tmp_plane = (v4l2_plane *)calloc(m_nmplane, sizeof(*tmp_plane));
 		memset (&buf, 0, sizeof(buf));
 		buf.type = m_deviceType;
 		buf.memory = V4L2_MEMORY_MMAP;
+		if (m_deviceType == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
+		{
+			buf.m.planes = m_buffer_mplane[n_buffers].planes_buffer;
+			buf.length = m_nmplane;
+		}
 
 		if (-1 == ioctl(m_fd, VIDIOC_DQBUF, &buf)) 
 		{

@@ -125,6 +125,7 @@ int V4l2Device::checkCapabilities(int fd, unsigned int mandatoryCapabilities)
 {
 	struct v4l2_capability cap;
 	memset(&(cap), 0, sizeof(cap));
+	// bool mplane_flag = false;
 	if (-1 == ioctl(fd, VIDIOC_QUERYCAP, &cap)) 
 	{
 		LOG(ERROR) << "Cannot get capabilities for device:" << m_params.m_devName << " " << strerror(errno);
@@ -133,7 +134,21 @@ int V4l2Device::checkCapabilities(int fd, unsigned int mandatoryCapabilities)
 	LOG(NOTICE) << "driver:" << cap.driver << " capabilities:" << std::hex << cap.capabilities <<  " mandatory:" << mandatoryCapabilities << std::dec;
 		
 	if ((cap.capabilities & V4L2_CAP_VIDEO_OUTPUT))  LOG(NOTICE) << m_params.m_devName << " support output";
-	if ((cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) LOG(NOTICE) << m_params.m_devName << " support capture";
+	if ((cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) 
+	{
+		LOG(NOTICE) << m_params.m_devName << " support capture";
+	}
+
+	if ((cap.capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE))
+	{
+		LOG(NOTICE) << m_params.m_devName << " support mplane capture";
+	}
+
+	// if (mplane_flag)
+	// {
+	// 	mandatoryCapabilities = mandatoryCapabilities & (~V4L2_CAP_VIDEO_CAPTURE);
+	// 	mandatoryCapabilities = mandatoryCapabilities | V4L2_CAP_VIDEO_CAPTURE_MPLANE;
+	// }
 
 	if ((cap.capabilities & V4L2_CAP_READWRITE))     LOG(NOTICE) << m_params.m_devName << " support read/write";
 	if ((cap.capabilities & V4L2_CAP_STREAMING))     LOG(NOTICE) << m_params.m_devName << " support streaming";
@@ -193,13 +208,34 @@ int V4l2Device::configureFormat(int fd, unsigned int format, unsigned int width,
 		return -1;
 	}
 	if (width != 0) {
-		fmt.fmt.pix.width       = width;
+		if (m_deviceType == V4L2_BUF_TYPE_VIDEO_CAPTURE)
+		{
+			fmt.fmt.pix.width       = width;
+		}
+		else if (m_deviceType == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
+		{
+			fmt.fmt.pix_mp.width 	= width;
+		}
 	}
 	if (height != 0) {
-		fmt.fmt.pix.height      = height;
+		if (m_deviceType == V4L2_BUF_TYPE_VIDEO_CAPTURE)
+		{
+			fmt.fmt.pix.height       = height;
+		}
+		else if (m_deviceType == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
+		{
+			fmt.fmt.pix_mp.height 	= height;
+		}
 	}
 	if (format != 0) {
-		fmt.fmt.pix.pixelformat = format;
+		if (m_deviceType == V4L2_BUF_TYPE_VIDEO_CAPTURE)
+		{
+			fmt.fmt.pix.pixelformat       = format;
+		}
+		else if (m_deviceType == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
+		{
+			fmt.fmt.pix_mp.pixelformat 	= format;
+		}
 	}
 	
 	if (ioctl(fd, VIDIOC_S_FMT, &fmt) == -1)
@@ -207,20 +243,31 @@ int V4l2Device::configureFormat(int fd, unsigned int format, unsigned int width,
 		LOG(ERROR) << m_params.m_devName << ": Cannot set format:" << fourcc(format) << " " << strerror(errno);
 		return -1;
 	}			
-	if (fmt.fmt.pix.pixelformat != format) 
+	if (fmt.fmt.pix.pixelformat != format || fmt.fmt.pix_mp.pixelformat != format) 
 	{
 		LOG(ERROR) << m_params.m_devName << ": Cannot set pixelformat to:" << fourcc(format) << " format is:" << fourcc(fmt.fmt.pix.pixelformat);
 		return -1;
 	}
-	if ((fmt.fmt.pix.width != width) || (fmt.fmt.pix.height != height))
+	if ((fmt.fmt.pix.width != width) || (fmt.fmt.pix.height != height) || (fmt.fmt.pix_mp.width != width) || (fmt.fmt.pix_mp.height != height))
 	{
 		LOG(WARN) << m_params.m_devName << ": Cannot set size to:" << width << "x" << height << " size is:"  << fmt.fmt.pix.width << "x" << fmt.fmt.pix.height;
 	}
-	
-	m_format     = fmt.fmt.pix.pixelformat;
-	m_width      = fmt.fmt.pix.width;
-	m_height     = fmt.fmt.pix.height;		
-	m_bufferSize = fmt.fmt.pix.sizeimage;
+	if (m_deviceType == V4L2_BUF_TYPE_VIDEO_CAPTURE)
+	{
+		m_format     = fmt.fmt.pix.pixelformat;
+		m_width      = fmt.fmt.pix.width;
+		m_height     = fmt.fmt.pix.height;		
+		m_bufferSize = fmt.fmt.pix.sizeimage;
+	}
+	else if (m_deviceType == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
+	{
+		m_format     = fmt.fmt.pix_mp.pixelformat;
+		m_width      = fmt.fmt.pix_mp.width;
+		m_height     = fmt.fmt.pix_mp.height;		
+		// m_bufferSize = fmt.fmt.pix_mp.sizeimage;
+		m_nmplane	 = fmt.fmt.pix_mp.num_planes;	
+	}
+
 	
 	LOG(NOTICE) << m_params.m_devName << ":" << fourcc(m_format) << " size:" << m_width << "x" << m_height << " bufferSize:" << m_bufferSize;
 	
