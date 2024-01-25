@@ -15,11 +15,11 @@
 #include <linux/videodev2.h>
 
 // project
-#include "logger.h"
+#include "v4l2cpp/logger.h"
 
-#include "V4l2Output.h"
-#include "V4l2MmapDevice.h"
-#include "V4l2ReadWriteDevice.h"
+#include "v4l2cpp/V4l2Output.h"
+#include "v4l2cpp/V4l2MmapDevice.h"
+#include "v4l2cpp/V4l2ReadWriteDevice.h"
 
 // -----------------------------------------
 //    create video output interface

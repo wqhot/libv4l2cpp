@@ -7,7 +7,7 @@
 ** 
 ** -------------------------------------------------------------------------*/
 
-#include "logger.h"
+#include "v4l2cpp/logger.h"
 
 #ifndef HAVE_LOG4CPP
 int LogLevel=NOTICE;

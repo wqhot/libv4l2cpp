@@ -13,7 +13,7 @@
 #ifndef V4L2_MMAP_DEVICE
 #define V4L2_MMAP_DEVICE
  
-#include "V4l2Device.h"
+#include "v4l2cpp/V4l2Device.h"
 
 #define V4L2MMAP_NBBUFFER 10
 

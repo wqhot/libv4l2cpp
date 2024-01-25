@@ -20,8 +20,8 @@
 #include <linux/videodev2.h>
 
 // project
-#include "logger.h"
-#include "V4l2MmapDevice.h"
+#include "v4l2cpp/logger.h"
+#include "v4l2cpp/V4l2MmapDevice.h"
 
 V4l2MmapDevice::V4l2MmapDevice(const V4L2DeviceParameters & params, v4l2_buf_type deviceType) : V4l2Device(params, deviceType), n_buffers(0) 
 {

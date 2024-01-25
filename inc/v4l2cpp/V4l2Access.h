@@ -13,7 +13,7 @@
 #ifndef V4L2_ACCESS
 #define V4L2_ACCESS
 
-#include "V4l2Device.h"
+#include "v4l2cpp/V4l2Device.h"
 
 class V4l2Access
 {

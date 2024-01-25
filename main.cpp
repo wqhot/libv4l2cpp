@@ -15,8 +15,8 @@
 #include <signal.h>
 #include <fstream>
 
-#include "logger.h"
-#include "V4l2Capture.h"
+#include "v4l2cpp/logger.h"
+#include "v4l2cpp/V4l2Capture.h"
 
 int stop=0;
 

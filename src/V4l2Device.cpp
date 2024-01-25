@@ -16,9 +16,9 @@
 // libv4l2
 #include <linux/videodev2.h>
 
-#include "logger.h"
+#include "v4l2cpp/logger.h"
 
-#include "V4l2Device.h"
+#include "v4l2cpp/V4l2Device.h"
 
 std::string V4l2Device::fourcc(unsigned int format) {
 	char formatArray[] = { (char)(format&0xff), (char)((format>>8)&0xff), (char)((format>>16)&0xff), (char)((format>>24)&0xff), 0 };

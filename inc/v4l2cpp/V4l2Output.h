@@ -13,7 +13,7 @@
 #ifndef V4L2_OUTPUT
 #define V4L2_OUTPUT
 
-#include "V4l2Access.h"
+#include "v4l2cpp/V4l2Access.h"
 
 // ---------------------------------
 // V4L2 Output

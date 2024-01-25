@@ -9,7 +9,7 @@
 **
 ** -------------------------------------------------------------------------*/
 
-#include "V4l2Access.h"
+#include "v4l2cpp/V4l2Access.h"
 
 V4l2Access::V4l2Access(V4l2Device* device) : m_device(device) {
 }

@@ -13,7 +13,7 @@
 #ifndef V4L2_CAPTURE
 #define V4L2_CAPTURE
 
-#include "V4l2Access.h"
+#include "v4l2cpp/V4l2Access.h"
 
 // ---------------------------------
 // V4L2 Capture
