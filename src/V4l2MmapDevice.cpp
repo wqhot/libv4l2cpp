@@ -220,7 +220,7 @@ size_t V4l2MmapDevice::readInternal(char* buffer, size_t bufferSize)
 		buf.memory = V4L2_MEMORY_MMAP;
 		if (m_deviceType == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
 		{
-			buf.m.planes = m_buffer_mplane[n_buffers].planes_buffer;
+			buf.m.planes = tmp_plane;
 			buf.length = m_nmplane;
 		}
 
@@ -231,13 +231,31 @@ size_t V4l2MmapDevice::readInternal(char* buffer, size_t bufferSize)
 		}
 		else if (buf.index < n_buffers)
 		{
-			size = buf.bytesused;
-			if (size > bufferSize)
+			if (m_deviceType == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
 			{
-				size = bufferSize;
-				LOG(WARN) << "Device " << m_params.m_devName << " buffer truncated available:" << bufferSize << " needed:" << buf.bytesused;
+				int buf_copy = 0;
+				for (int plane = 0; plane < m_nmplane; plane++)
+				{
+					if (buf_copy > bufferSize)
+					{
+						LOG(WARN) << "Device " << m_params.m_devName << " buffer truncated available:" << bufferSize << " needed:" << buf_copy;
+						continue;
+					}
+					memcpy(buffer + buf_copy, ((m_buffer_mplane + buf.index)->plane_start + plane)->start, (tmp_plane + plane)->bytesused);
+					buf_copy = buf_copy + (tmp_plane + plane)->bytesused;
+				}
 			}
-			memcpy(buffer, m_buffer[buf.index].start, size);
+			else
+			{
+				size = buf.bytesused;
+				if (size > bufferSize)
+				{
+					size = bufferSize;
+					LOG(WARN) << "Device " << m_params.m_devName << " buffer truncated available:" << bufferSize << " needed:" << buf.bytesused;
+				}
+				memcpy(buffer, m_buffer[buf.index].start, size);
+			}
+			
 
 			if (-1 == ioctl(m_fd, VIDIOC_QBUF, &buf))
 			{

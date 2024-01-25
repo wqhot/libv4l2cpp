@@ -13,6 +13,7 @@
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
+#include <fstream>
 
 #include "logger.h"
 #include "V4l2Capture.h"
@@ -84,7 +85,8 @@ int main(int argc, char* argv[])
 		timeval tv;
 		
 		LOG(NOTICE) << "Start reading from " << in_devname;
-		signal(SIGINT,sighandler);				
+		signal(SIGINT,sighandler);	
+		int saveCount = 0;			
 		while (!stop) 
 		{
 			tv.tv_sec=1;
@@ -102,6 +104,14 @@ int main(int argc, char* argv[])
 				else
 				{
 					LOG(NOTICE) << "size:" << rsize;
+					std::string filename = "./video/video_" + std::to_string(saveCount) + ".yuv";
+					std::ofstream ofs;
+					ofs.open(filename.c_str(), std::ofstream::out | std::ofstream::trunc);
+
+					ofs.write(buffer, sizeof(buffer));
+					ofs.close();
+
+					saveCount = (saveCount + 1) % 100;
 				}
 			}
 			else if (ret == -1)

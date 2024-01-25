@@ -266,6 +266,11 @@ int V4l2Device::configureFormat(int fd, unsigned int format, unsigned int width,
 		m_height     = fmt.fmt.pix_mp.height;		
 		// m_bufferSize = fmt.fmt.pix_mp.sizeimage;
 		m_nmplane	 = fmt.fmt.pix_mp.num_planes;	
+		m_bufferSize = 0;
+		for (int plane = 0; plane < m_nmplane; plane++)
+		{
+			m_bufferSize += fmt.fmt.pix_mp.plane_fmt[plane].sizeimage;
+		}
 	}
 
 	
