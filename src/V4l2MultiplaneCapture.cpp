@@ -49,11 +49,18 @@ int V4l2MultiplaneCapture::setFormat(unsigned int format, unsigned int width, un
     return 0;
 }
 
-int V4l2MultiplaneCapture::start(CaputureType captureType)
+int V4l2MultiplaneCapture::start(unsigned char *buffer, unsigned int reqCount)
 {
-    req.count = 5;
+    req.count = reqCount;
     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
     req.memory = V4L2_MEMORY_MMAP;
+
+    if (buffer == nullptr)
+    {
+        printf("buffer is null\n");
+        return -1;
+    }
+
     if (ioctl(fd, VIDIOC_REQBUFS, &req) < 0)
     {
         printf("Reqbufs fail\n");
@@ -164,11 +171,18 @@ int V4l2MultiplaneCapture::start(CaputureType captureType)
             if (ioctl(fd, VIDIOC_DQBUF, &buf) < 0)
                 printf("dqbuf fail\n");
 
+            std::unique_lock<std::mutex> lock(mtx);
+            lock.lock();
+            size_t buffer_size_tmp = 0;
             for (int j = 0; j < num_planes; j++)
             {
                 printf("plane[%d] start = %p, bytesused = %d\n", j, ((buffers + buf.index)->plane_start + j)->start, (tmp_plane + j)->bytesused);
                 // fwrite(((buffers + buf.index)->plane_start + j)->start, (tmp_plane + j)->bytesused, 1, file_fd);
+                memcpy(buffer + buffer_size_tmp, ((buffers + buf.index)->plane_start + j)->start, (tmp_plane + j)->bytesused);
+                buffer_size_tmp += (tmp_plane + j)->bytesused;
             }
+            cond.notify_one();
+            lock.unlock();
 
             if (ioctl(fd, VIDIOC_QBUF, &buf) < 0)
                 printf("failture VIDIOC_QBUF\n");
@@ -177,6 +191,38 @@ int V4l2MultiplaneCapture::start(CaputureType captureType)
     std::thread th(while_fun);
     th.detach();
     return 0;
+}
+
+void V4l2MultiplaneCapture::waitForFrame()
+{
+    std::unique_lock<std::mutex> lock(mtx);
+    cond.wait(lock);
+    lock.unlock();
+}
+
+size_t V4l2MultiplaneCapture::getBufferSize()
+{
+    if (fd < 0)
+    {
+        return 0;
+    }
+    struct v4l2_format fmt;
+    memset(&fmt, 0, sizeof(fmt));
+    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
+    size_t length = 0;
+    if (0 != ioctl(fd, VIDIOC_G_FMT, &fmt))
+    {
+        return 0;
+        // printf("width = %d\n", fmt.fmt.pix_mp.width);
+        // printf("height = %d\n", fmt.fmt.pix_mp.height);
+        // printf("nmplane = %d\n", fmt.fmt.pix_mp.num_planes);
+    }
+
+    for (int i = 0; i < fmt.fmt.pix_mp.num_planes; i++)
+    {
+        length += fmt.fmt.pix_mp.plane_fmt[i].sizeimage;
+    }
+    return length;
 }
 
 int V4l2MultiplaneCapture::open(const char *dev_name)
@@ -254,7 +300,7 @@ void V4l2MultiplaneCapture::close()
     {
         return;
     }
-    
+
     type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
     if (ioctl(fd, VIDIOC_STREAMOFF, &type) < 0)
         printf("VIDIOC_STREAMOFF fail\n");

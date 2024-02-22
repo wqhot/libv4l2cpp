@@ -2,22 +2,21 @@
 #define _V4L2_MULTIPLANE_CAPTURE_H__
 
 #include <linux/videodev2.h>
+#include <mutex>
+#include <condition_variable>
 
 class V4l2MultiplaneCapture
 {
 public:
-    enum CaputureType {
-        SYNC = 0,
-        ASYNC,
-    };
     V4l2MultiplaneCapture();
     ~V4l2MultiplaneCapture();
 
     int open(const char *dev_name);
     int setFormat(unsigned int format, unsigned int width, unsigned int height);
-    int start(CaputureType captureType);
+    size_t getBufferSize();
+    int start(unsigned char* buffer, unsigned int reqCount);
     void close();
-    int stop();
+    void waitForFrame();
 private:
     struct plane_start_t
     {
@@ -40,7 +39,8 @@ private:
     enum v4l2_buf_type type;
     int fd;
     int num_planes;
-    unsigned char *buffer;
+    std::mutex mtx;
+    std::condition_variable cond;
 
     void close_f1();
     void close_f2();
