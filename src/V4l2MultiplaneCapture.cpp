@@ -11,7 +11,7 @@
 #include <sys/mman.h>
 #include <errno.h>
 #include <thread>
-#include "v4l2cpp/V4l2MultiplaneCaputure.h"
+#include "v4l2cpp/V4l2MultiplaneCapture.h"
 
 V4l2MultiplaneCapture::V4l2MultiplaneCapture() : fd(-1)
 {
@@ -55,12 +55,13 @@ int V4l2MultiplaneCapture::start(unsigned int reqCount)
     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
     req.memory = V4L2_MEMORY_MMAP;
 
-    unsigned char *buffer = new unsigned char[4096 * 4096 * 4];
-    if (buffer == nullptr)
-    {
-        printf("buffer is null\n");
-        return -1;
-    }
+    // unsigned char *buffer = (unsigned char *)malloc(4096 * 4096 * 4);
+    static unsigned char buffer[4096*4096*4];
+    // if (buffer == nullptr)
+    // {
+    //     printf("buffer is null\n");
+    //     return -1;
+    // }
 
     if (ioctl(fd, VIDIOC_REQBUFS, &req) < 0)
     {
@@ -170,13 +171,16 @@ int V4l2MultiplaneCapture::start(unsigned int reqCount)
             buf.m.planes = tmp_plane;
             buf.length = num_planes;
             if (ioctl(fd, VIDIOC_DQBUF, &buf) < 0)
+            {
                 printf("dqbuf fail\n");
+                // continue;
+            }
 
             // std::unique_lock<std::mutex> lock(mtx);
             size_t buffer_size_tmp = 0;
             for (int j = 0; j < num_planes; j++)
             {
-                printf("plane[%d] start = %p, bytesused = %d\n", j, ((buffers + buf.index)->plane_start + j)->start, (tmp_plane + j)->bytesused);
+                // printf("plane[%d] start = %p, bytesused = %d\n", j, ((buffers + buf.index)->plane_start + j)->start, (tmp_plane + j)->bytesused);
                 // fwrite(((buffers + buf.index)->plane_start + j)->start, (tmp_plane + j)->bytesused, 1, file_fd);
                 memcpy(buffer + buffer_size_tmp, ((buffers + buf.index)->plane_start + j)->start, (tmp_plane + j)->bytesused);
                 buffer_size_tmp += (tmp_plane + j)->bytesused;
@@ -188,17 +192,11 @@ int V4l2MultiplaneCapture::start(unsigned int reqCount)
             if (ioctl(fd, VIDIOC_QBUF, &buf) < 0)
                 printf("failture VIDIOC_QBUF\n");
         }
+        return 0;
     };
     std::thread th(while_fun);
     th.detach();
     return 0;
-}
-
-void V4l2MultiplaneCapture::waitForFrame()
-{
-    std::unique_lock<std::mutex> lock(mtx);
-    cond.wait(lock);
-    lock.unlock();
 }
 
 int V4l2MultiplaneCapture::callbackRegister(void (*func)(unsigned char *buffer, unsigned int bufferLength, void *user_data), void *user_data)

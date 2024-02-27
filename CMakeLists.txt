@@ -7,7 +7,7 @@ project(v4l2cpp)
 set (CMAKE_CXX_STANDARD 11)
 
 aux_source_directory(src SRC_FILES)
-add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
+add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
 target_link_libraries(${PROJECT_NAME}
 pthread
 )

@@ -16,24 +16,13 @@
 #include <fstream>
 #include <thread>
 
-#include "v4l2cpp/logger.h"
-#include "v4l2cpp/V4l2MultiplaneCaputure.h"
-
-int stop = 0;
-
-/* ---------------------------------------------------------------------------
-**  SIGINT handler
-** -------------------------------------------------------------------------*/
-void sighandler(int)
-{
-	printf("SIGINT\n");
-	stop = 1;
-}
+#include "v4l2cpp/V4l2MultiplaneCapture.h"
 
 void callback_func(unsigned char *buffer, unsigned int bufferLength, void *user_data)
 {
 	V4l2MultiplaneCapture *cap_p = (V4l2MultiplaneCapture *)user_data;
 	printf("new frame, length = %d\n", bufferLength);
+	// 此处会阻塞收视频线程
 }
 
 /* ---------------------------------------------------------------------------
@@ -41,24 +30,18 @@ void callback_func(unsigned char *buffer, unsigned int bufferLength, void *user_
 ** -------------------------------------------------------------------------*/
 int main(int argc, char *argv[])
 {
-	int verbose = 0;
 	const char *in_devname = argv[1];
 
 	V4l2MultiplaneCapture cap;
 	cap.open(in_devname);
-	cap.setFormat(V4L2_PIX_FMT_BGR24, 1920, 1080);
-	// unsigned char *buffer;
+	cap.setFormat(V4L2_PIX_FMT_NV12, 1920, 1080);
 	size_t l = cap.getBufferSize();
 	cap.callbackRegister(callback_func, &cap);
-	// buffer = new unsigned char[l];
 	cap.start(5);
 
 	while (1)
 	{
-		// cap.waitForFrame();
-		// printf("new frame");
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
-	// delete[] buffer;
 	return 0;
 }

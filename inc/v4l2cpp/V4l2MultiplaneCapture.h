@@ -17,7 +17,6 @@ public:
     int start(unsigned int reqCount);
     int callbackRegister(void (*func)(unsigned char *buffer, unsigned int bufferLength, void *user_data), void *user_data);
     void close();
-    void waitForFrame();
 private:
     struct plane_start_t
     {
@@ -40,8 +39,6 @@ private:
     enum v4l2_buf_type type;
     int fd;
     int num_planes;
-    std::mutex mtx;
-    std::condition_variable cond;
     void *user_data;
     void (*callback_func)(unsigned char *buffer, unsigned int bufferLength, void *user_data);
     void close_f1();
