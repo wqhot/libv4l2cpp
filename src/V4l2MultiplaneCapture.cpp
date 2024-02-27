@@ -49,12 +49,13 @@ int V4l2MultiplaneCapture::setFormat(unsigned int format, unsigned int width, un
     return 0;
 }
 
-int V4l2MultiplaneCapture::start(unsigned char *buffer, unsigned int reqCount)
+int V4l2MultiplaneCapture::start(unsigned int reqCount)
 {
     req.count = reqCount;
     req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
     req.memory = V4L2_MEMORY_MMAP;
 
+    unsigned char *buffer = new unsigned char[4096 * 4096 * 4];
     if (buffer == nullptr)
     {
         printf("buffer is null\n");
@@ -171,8 +172,7 @@ int V4l2MultiplaneCapture::start(unsigned char *buffer, unsigned int reqCount)
             if (ioctl(fd, VIDIOC_DQBUF, &buf) < 0)
                 printf("dqbuf fail\n");
 
-            std::unique_lock<std::mutex> lock(mtx);
-            lock.lock();
+            // std::unique_lock<std::mutex> lock(mtx);
             size_t buffer_size_tmp = 0;
             for (int j = 0; j < num_planes; j++)
             {
@@ -181,8 +181,9 @@ int V4l2MultiplaneCapture::start(unsigned char *buffer, unsigned int reqCount)
                 memcpy(buffer + buffer_size_tmp, ((buffers + buf.index)->plane_start + j)->start, (tmp_plane + j)->bytesused);
                 buffer_size_tmp += (tmp_plane + j)->bytesused;
             }
-            cond.notify_one();
-            lock.unlock();
+            callback_func(buffer, buffer_size_tmp, user_data);
+            // cond.notify_one();
+            // lock.unlock();
 
             if (ioctl(fd, VIDIOC_QBUF, &buf) < 0)
                 printf("failture VIDIOC_QBUF\n");
@@ -198,6 +199,13 @@ void V4l2MultiplaneCapture::waitForFrame()
     std::unique_lock<std::mutex> lock(mtx);
     cond.wait(lock);
     lock.unlock();
+}
+
+int V4l2MultiplaneCapture::callbackRegister(void (*func)(unsigned char *buffer, unsigned int bufferLength, void *user_data), void *user_data)
+{
+    this->user_data = user_data;
+    this->callback_func = func;
+    return 0;
 }
 
 size_t V4l2MultiplaneCapture::getBufferSize()

@@ -14,7 +14,8 @@ public:
     int open(const char *dev_name);
     int setFormat(unsigned int format, unsigned int width, unsigned int height);
     size_t getBufferSize();
-    int start(unsigned char* buffer, unsigned int reqCount);
+    int start(unsigned int reqCount);
+    int callbackRegister(void (*func)(unsigned char *buffer, unsigned int bufferLength, void *user_data), void *user_data);
     void close();
     void waitForFrame();
 private:
@@ -41,7 +42,8 @@ private:
     int num_planes;
     std::mutex mtx;
     std::condition_variable cond;
-
+    void *user_data;
+    void (*callback_func)(unsigned char *buffer, unsigned int bufferLength, void *user_data);
     void close_f1();
     void close_f2();
 };
