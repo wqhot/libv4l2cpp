@@ -56,7 +56,7 @@ int V4l2MultiplaneCapture::start(unsigned int reqCount)
     req.memory = V4L2_MEMORY_MMAP;
 
     // unsigned char *buffer = (unsigned char *)malloc(4096 * 4096 * 4);
-    static unsigned char buffer[4096*4096*4];
+    static unsigned char buffer[4096 * 4096 * 4];
     // if (buffer == nullptr)
     // {
     //     printf("buffer is null\n");
@@ -74,14 +74,18 @@ int V4l2MultiplaneCapture::start(unsigned int reqCount)
 
     num_planes = fmt.fmt.pix_mp.num_planes;
 
-    buffers = (buffer_t *)malloc(req.count * sizeof(*buffers));
+    // buffers = (buffer_t *)malloc(req.count * sizeof(*buffers));
+    buffers = new buffer_t[req.count];
 
     for (int i = 0; i < req.count; i++)
     {
         memset(&buf, 0, sizeof(buf));
-        planes_buffer = (v4l2_plane *)calloc(num_planes, sizeof(*planes_buffer));
-        plane_start = (plane_start_t *)calloc(num_planes, sizeof(*plane_start));
-        memset(planes_buffer, 0, sizeof(*planes_buffer));
+        // planes_buffer = (v4l2_plane *)calloc(num_planes, sizeof(*planes_buffer));
+        planes_buffer = new v4l2_plane[num_planes];
+        // plane_start = (plane_start_t *)calloc(num_planes, sizeof(*plane_start));
+        plane_start = new plane_start_t[num_planes];
+        // memset(planes_buffer, 0, sizeof(*planes_buffer));
+        std::fill(planes_buffer, planes_buffer + num_planes, v4l2_plane{0});
         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
         buf.memory = V4L2_MEMORY_MMAP;
         buf.m.planes = planes_buffer;
@@ -138,7 +142,8 @@ int V4l2MultiplaneCapture::start(unsigned int reqCount)
 
     int num = 0;
     struct v4l2_plane *tmp_plane;
-    tmp_plane = (v4l2_plane *)calloc(num_planes, sizeof(*tmp_plane));
+    // tmp_plane = (v4l2_plane *)calloc(num_planes, sizeof(*tmp_plane));
+    tmp_plane = new v4l2_plane[num_planes];
     struct timeval tv;
 
     auto while_fun = [&]()
@@ -291,7 +296,8 @@ void V4l2MultiplaneCapture::close_f2()
         free((buffers + i)->plane_start);
     }
 
-    free(buffers);
+    // free(buffers);
+    delete[] buffers;
     close_f1();
 }
 
